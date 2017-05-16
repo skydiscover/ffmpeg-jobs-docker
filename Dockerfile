@@ -3,6 +3,7 @@ FROM jrottenberg/ffmpeg:latest
 WORKDIR /
 
 ENV DISPLAY_REFRESH_RATE=5 \
+    DISPLAY_MIN_DELTA=0 \
     PULL_REFRESH_RATE=5
 
 RUN apt-get update && apt-get install -y bc

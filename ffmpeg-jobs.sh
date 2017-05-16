@@ -15,14 +15,15 @@ display () # Calculate/collect progress
 START=$(date +%s); FR_CNT=0; ETA=0; ELAPSED=0
 while [ -e /proc/$FF_PID ]; do
     sleep $DISPLAY_REFRESH_RATE
-    VSTATS=$(tail -c 160 "$VSTAT_FILE" | sed -rn "s/.*frame= *([0-9]+).*/\1/p")
+    VSTATS=$(tail -n 1 "$VSTAT_FILE" | sed -rn "s/.*frame= *([0-9]+).*/\1/p")
     if [ $VSTATS -gt $FR_CNT ]; then
         FR_CNT=$VSTATS
         PERCENTAGE=$(echo "scale=2; 100 * $FR_CNT / $TOT_FR" | bc)
-        ELAPSED=$(echo "$(date +%s) - $START" | bc)
-        ETA=$(date -d @$(awk 'BEGIN{print int(('$ELAPSED' / '$FR_CNT') * ('$TOT_FR' - '$FR_CNT'))}') -u +%H:%M:%S)
-        FPS=$(echo "scale=2; $FR_CNT / $ELAPSED" | bc)
+        
     fi
+    ELAPSED=$(echo "$(date +%s) - $START" | bc)
+    ETA=$(date -d @$(awk 'BEGIN{print int(('$ELAPSED' / '$FR_CNT') * ('$TOT_FR' - '$FR_CNT'))}') -u +%H:%M:%S)
+    FPS=$(echo "scale=2; $FR_CNT / $ELAPSED" | bc)
     echo "Frame:$FR_CNT of $TOT_FR Time:$(date -d @$ELAPSED -u +%H:%M:%S) FPS:$FPS ETA:$ETA Percent:$PERCENTAGE"
 done
 }

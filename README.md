@@ -1,6 +1,3 @@
-# ffmpeg-jobs-docker
-A docker container with a script to somewhat handle jobs for ffmpeg and with a better display
-
 FFmpeg jobs and enhanced progress display
 =========================================
 
@@ -21,7 +18,8 @@ docker run
 ```
 
 Then the conainer will monitor files that are added in `/jobs/input` and process those jobs.
-A job file contains only a ffmpeg command, like `ffmpeg -i "my-movie" -c:v libx264 -c:a copy "my_new_movie"`
+A job file contains only a ffmpeg command, like `ffmpeg -i "my-movie" -c:v libx264 -c:a copy "my_new_movie"`.
+
 Obviously, files have to be accessible by the container, so add as many mounted volumes as you need to.
 And for file in the job file, I highly advise you to just use double quotes `""` if filenames are complex.
 
