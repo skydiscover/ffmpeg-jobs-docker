@@ -48,7 +48,7 @@ while true ; do
   mv "${JOBS_INPUT_DIR}/${FILE}" "${JOBS_WORKING_DIR}/."
   
   FF_OPTS=$(perl -ne 'print "$1\n" if /\b *ffmpeg +(.*)/' "${JOBS_WORKING_DIR}/${FILE}")
-  VIDEOINPUT=$(echo "${FF_OPTS}" | perl -ne 'print "$1\n" if /\b.* -i +\"([^\"]*)\"/')
+  VIDEOINPUT=$(echo "${FF_OPTS}" | perl -ne 'print "$1\n" if /\b(?:.* )?-i +\"([^\"]*)\"/')
   FPS=$(ffprobe "${VIDEOINPUT}" 2>&1 | sed -n "s/.*, \(.*\) tbr.*/\1/p")
   DUR=$(ffprobe "${VIDEOINPUT}" 2>&1 | sed -n "s/.* Duration: \([^,]*\), .*/\1/p")
   HRS=$(echo $DUR | cut -d":" -f1)
