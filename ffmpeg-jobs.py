@@ -37,25 +37,39 @@ class TqdmToLogger(io.StringIO):
 def monitor_ffmpeg_cmd(ffmpeg_cmd):
     ffargs = shlex.split(ffmpeg_cmd)
     input_file = ffargs[ffargs.index("-i") + 1]
-    video_fps = eval(re.findall(r'r_frame_rate="([^"]+)"', str(subprocess.check_output(shlex.split("ffprobe \"%s\" -v 0 -select_streams v:0 -print_format flat -show_entries stream=r_frame_rate" % input_file))))[0])
-    duration = eval(re.findall(r'duration="([^"]+)"', str(subprocess.check_output(shlex.split("ffprobe \"%s\" -v 0 -select_streams v:0 -print_format flat -show_entries stream=duration" % input_file))))[0])
     logger.info("analysing for frame count")
-    
-    frame_count = int(video_fps * duration)
+    # video_fps = eval(
+        # re.findall(
+            # r'r_frame_rate="([^"]+)"',
+            # str(subprocess.check_output([u"ffprobe", input_file.encode("utf-8"), u"-v", u"0", u"-select_streams", u"v:0", u"-print_format", u"flat", u"-show_entries", u"stream=r_frame_rate"])))[0])
+    # logging.debug("Video framerate is %5.02f" % video_fps)
+    # tmp = subprocess.check_output([u"ffprobe", input_file.encode("utf-8"), u"-v", u"0", u"-select_streams", u"v:0", u"-print_format", u"flat", u"-show_entries", u"stream=duration"])
+    # duration = re.findall(
+            # r'duration="([^"]+)"',
+            # str(subprocess.check_output([u"ffprobe", input_file.encode("utf-8"), u"-v", u"0", u"-select_streams", u"v:0", u"-print_format", u"flat", u"-show_entries", u"stream=duration"])))[0]
+    # if duration != "N/A":
+        # logging.debug("Video duration is %5.02f sec" % duration)
+        # frame_count = int(video_fps * float(duration))
+    # else:
+        # logging.warning("Could not fetch duration with ffprobe, emulating a Video lenght of 3 hours")
+        # frame_count = int(video_fps * 10800.)
+    frame_count = int(subprocess.check_output([u"mediainfo", u"--Language=raw", u"-f", u"--Inform=Video;%FrameCount%", input_file.encode("utf-8")]))
     logger.info("frame count is %d" % frame_count)
     
     logger.info("launching command %s" % ffmpeg_cmd)
-    pbar = tqdm(total=frame_count, file=tqdm_out, mininterval=args.display_refresh_rate, desc=os.path.basename(ffargs[-1]), ncols=200, unit='frame' )
+    pbar = tqdm(total=frame_count, file=tqdm_out, mininterval=args.display_refresh_rate, desc=os.path.basename(ffargs[-1]), ncols=200, unit='frame', smoothing=0)
     old_frame = 0
-    thread = pexpect.spawn(ffmpeg_cmd)
+    # thread = pexpect.spawn(ffmpeg_cmd.encode("utf-8"), encoding='utf-8')
+    thread = pexpect.spawn(u"ffmpeg", shlex.split(ffmpeg_cmd)[1:], encoding='utf-8')
     cpl = thread.compile_pattern_list([pexpect.EOF, "frame= *\d+", '(.+)'])
     while True:
         i = thread.expect_list(cpl, timeout=None)
         if i == 0: # EOF
             logger.debug("the sub process exited")
+            pbar.close()
             break
         elif i == 1:
-            frame_number = int(re.findall(r"frame= *(\d+)", thread.match.group(0).decode("utf-8"))[0])
+            frame_number = int(re.findall(r"frame= *(\d+)", thread.match.group(0))[0])
             pbar.update(frame_number - old_frame)
             old_frame = frame_number
             # thread.close
@@ -75,7 +89,7 @@ args = argparser.parse_args()
             
 logging.basicConfig(format='[%(levelname)s] %(message)s')
 logger = logging.getLogger()
-# logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.DEBUG)
 
 tqdm_out = TqdmToLogger(logger,level=logging.INFO)
             
@@ -101,7 +115,7 @@ while True:
         continue
         
     for file in files:
-        with open("%s/%s" % (JOBS_INPUT_DIR, file), 'r') as ifile:
+        with open("%s/%s" % (JOBS_INPUT_DIR, file), 'r', encoding='utf-8') as ifile:
             ffmpeg_cmd = ifile.read()
             
         nb_input = shlex.split(ffmpeg_cmd).count("-i")
@@ -117,5 +131,3 @@ while True:
             # 0 occurence ?
             logger.warning("No input file in ffmpeg command ?")
             continue
-        
-        os.rename("%s/%s" % (JOBS_WORKING_DIR, file), "%s/%s" % (JOBS_DONE_DIR, file))
